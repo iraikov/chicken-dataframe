@@ -125,3 +125,5 @@
 (print (linear-regression tdf9 'abs 'sum))
 
 (df-store tdf8 (current-output-port))
+
+(exit 1)
