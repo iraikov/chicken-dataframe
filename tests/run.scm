@@ -126,4 +126,3 @@
 
 (df-serialize tdf8 (current-output-port))
 
-(exit 1)
