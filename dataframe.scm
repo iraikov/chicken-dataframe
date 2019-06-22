@@ -30,7 +30,7 @@
          df-columns df-keys df-items df-row-count df-filter-columns df-select-columns
          df-insert-column df-insert-derived df-insert-columns df-update-column df-delete-column
          df-for-each-column df-for-each-collection df-gen-columns df-gen-rows
-         df-serialize df-deserialize
+         df-serialize df-deserialize df-from-rows
          apply-collections map-columns map-collections reduce-collections
          display.max-elements display.max-columns
          compare-symbol compare-int)
@@ -52,6 +52,12 @@
           (cons (car lst)
                 (recur (cdr lst) (- k 1))))))
 
+  (define (enumerate lst)
+    (let recur ((lst lst) (i 0) (ax '()))
+      (if (null? lst) (reverse ax)
+          (recur (cdr lst) (+ 1 i) (cons i ax)))
+      ))
+    
   
   (define-predicate column?)
   (define-operation (column-properties column))
@@ -156,6 +162,26 @@
         (map-elts (lambda (item) (dproc item)) (elt-drop parent n) ))
        ))
       )
+  
+  (define (collection-from-rows source n)
+    (let ( (accessor (lambda (c) (elt-ref c n)))
+           (parent (if (procedure? source) (generator->list source) source)) )
+      (object
+       ;; collection behaviors
+       ((collection? self) #t)
+       ((size self) (size parent))
+       ((gen-keys self) (gen-keys parent))
+       ((gen-elts self) (g-map accessor (gen-elts parent)))
+       ((for-each-key self proc)
+        (for-each-key parent proc))
+       ((for-each-elt self proc)
+        (for-each-elt parent (lambda (item) (proc (accessor item)))))
+       ((elt-take self n)
+        (map-elts (lambda (item) (accessor item)) (elt-take parent n) ))
+       ((elt-drop self n)
+        (map-elts (lambda (item) (accessor item)) (elt-drop parent n) ))
+       ))
+      )
 
   
   (define-predicate data-frame?)
@@ -180,6 +206,7 @@
   (define-operation (df-gen-rows data-frame))
   (define-operation (df-serialize data-frame port))
   (define-operation (df-deserialize data-frame port))
+
 
   (define (compare-symbol x y)
     (- (symbol-hash x) (symbol-hash y)))
@@ -294,7 +321,7 @@
                                    (put m key c)))
                                column-map keys)))
             (make-data-frame new-column-map: m1))
-        ))
+          ))
      ((show self port)
       (let* ((cols (df-columns self))
              (keys (lseq->list (lseq-map column-key cols)))
@@ -334,6 +361,17 @@
           ))
       )
      )
+
+  (define (df-from-rows column-keys source  #!key (column-key-compare compare-symbol))
+    (let* ((column-map (rb-tree-map column-key-compare))
+           (m1 (list.fold (lambda (n key m)
+                            (let* ((data (collection-from-rows source n))
+                                   (c (make-data-column key data '())))
+                              (put m key c)))
+                          column-map (enumerate column-keys) column-keys)))
+      (make-data-frame column-key-compare: column-key-compare
+                       new-column-map: m1))
+    )
 
   (define (apply-collections proc df . keys)
     (let ((ks (if (null? keys) (lseq->list (df-keys df)) keys)))
