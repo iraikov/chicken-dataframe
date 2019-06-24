@@ -12,13 +12,6 @@
    (list-tabulate 100 (lambda (x) (- x 10)))
    '()))
 
-(define (lseq->list lseq)
-    (let recur ((lseq lseq) (ax '()))
-      (if (null? lseq)
-          (reverse ax)
-          (recur (lseq-rest lseq) (cons (lseq-first lseq) ax)))
-      ))
-
 (print "tdf1: " (lseq->list (df-items tdf1)))
 
 (show tdf1 #f)

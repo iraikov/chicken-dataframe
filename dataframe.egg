@@ -3,7 +3,8 @@
  (author "Ivan Raikov")
  (license "GPL-3")
  (category data)
- (dependencies srfi-1 srfi-25 srfi-69 utf8 vector-lib yasos rb-tree fmt statistics)
+ (dependencies srfi-1 srfi-25 srfi-69 srfi-127
+               utf8 vector-lib yasos rb-tree fmt statistics)
  (test-dependencies test srfi-1)
  (components (extension fmt-table)
              (extension dataframe (component-dependencies fmt-table))

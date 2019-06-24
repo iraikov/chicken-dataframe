@@ -37,7 +37,7 @@
 
         (import scheme (chicken base) (chicken string) (chicken format)
                 (prefix (only srfi-1 fold any) list.)
-                (only srfi-69 symbol-hash)
+                (only srfi-69 symbol-hash) srfi-127
           yasos yasos-collections rb-tree fmt fmt-table)
 
   (define display.max-elements (make-parameter 20))
@@ -57,8 +57,31 @@
       (if (null? lst) (reverse ax)
           (recur (cdr lst) (+ 1 i) (cons i ax)))
       ))
+
+  ;; Helper returns #t if any element of list is null or #f if none
+  (define (any-null? list)
+    (cond
+     ((null? list) #f)
+     ((null? (car list)) #t)
+     (else (any-null? (cdr list)))))
+
+  ;; Safe version of lseq-rest that returns () if the argument is ()
+  (define (safe-lseq-rest obj)
+    (if (null? obj)
+        obj
+        (lseq-rest obj)))
     
-  
+  (define (lseq-map-generator proc . lseqs)
+    (let ((lseqsp (make-parameter lseqs)))
+      (lambda ()
+        (let ((lseqsv (lseqsp)))
+          (if (any-null? lseqsv)
+              (eof-object)
+              (let ((result (apply proc (map lseq-first lseqsv))))
+                (lseqsp (map safe-lseq-rest lseqsv))
+                result))))
+      ))
+
   (define-predicate column?)
   (define-operation (column-properties column))
   (define-operation (column-key column))
